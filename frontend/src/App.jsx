@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const API_URL = "http://localhost:5000/api/pathfind";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const API_URL = `${API_BASE_URL}/api/pathfind`;
 
 const TOOL = {
   WALL: "wall",
@@ -260,7 +261,11 @@ function App() {
         setStatus("No path found. Try reducing walls or enabling diagonals.");
       }
     } catch (error) {
-      setStatus(error.message || "Unexpected error.");
+      if (error instanceof TypeError) {
+        setStatus("Failed to reach backend. Start backend on port 5000 or set VITE_API_URL.");
+      } else {
+        setStatus(error.message || "Unexpected error.");
+      }
     } finally {
       setIsRunning(false);
     }
