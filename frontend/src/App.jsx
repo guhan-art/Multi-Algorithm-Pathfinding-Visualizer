@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-const API_URL = `${API_BASE_URL}/api/pathfind`;
+const API_PATH = "/api/pathfind";
+
+function getApiCandidates() {
+  if (API_BASE_URL) {
+    return [`${API_BASE_URL}${API_PATH}`];
+  }
+
+  const candidates = [API_PATH, "http://localhost:5000/api/pathfind"];
+  return [...new Set(candidates)];
+}
 
 const TOOL = {
   WALL: "wall",
@@ -232,19 +241,35 @@ function App() {
     setGrid((prev) => clearVisualization(prev));
 
     try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          grid: toNumericGrid(grid),
-          start,
-          end,
-          algorithm,
-          allowDiagonal
-        })
+      const payload = JSON.stringify({
+        grid: toNumericGrid(grid),
+        start,
+        end,
+        algorithm,
+        allowDiagonal
       });
+
+      let response;
+      let lastFetchError = null;
+
+      for (const apiUrl of getApiCandidates()) {
+        try {
+          response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: payload
+          });
+          break;
+        } catch (fetchError) {
+          lastFetchError = fetchError;
+        }
+      }
+
+      if (!response) {
+        throw lastFetchError || new TypeError("Failed to fetch");
+      }
 
       const data = await response.json();
 
@@ -262,7 +287,7 @@ function App() {
       }
     } catch (error) {
       if (error instanceof TypeError) {
-        setStatus("Failed to reach backend. Start backend on port 5000 or set VITE_API_URL.");
+        setStatus("Failed to reach backend. Run npm run dev from project root, or set VITE_API_URL.");
       } else {
         setStatus(error.message || "Unexpected error.");
       }
