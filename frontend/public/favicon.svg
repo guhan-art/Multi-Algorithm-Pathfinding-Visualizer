@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Pathfinding Visualizer icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="path" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" />
+
+  <path d="M15 17h10v10H15zM39 39h10v10H39z" fill="#334155" />
+  <path d="M20 22c7 1 12 5 15 10c2 4 5 7 11 8" fill="none" stroke="url(#path)" stroke-width="5" stroke-linecap="round" />
+
+  <circle cx="20" cy="22" r="4" fill="#22d3ee" />
+  <circle cx="50" cy="44" r="4" fill="#f59e0b" />
+</svg>
