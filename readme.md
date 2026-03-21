@@ -68,6 +68,12 @@ Default URLs:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:5000`
 
+## GitHub Pages / Production Note
+
+- GitHub Pages can host only the frontend static site. It does not run the Node.js backend.
+- This project now falls back to an in-browser solver when the backend is unavailable, so `Visualize` still works on the hosted frontend.
+- If you want server mode in production, deploy `backend/` separately (Render/Railway/etc.) and set `VITE_API_URL` in the frontend build environment.
+
 ## API Contract
 
 ### POST `/api/pathfind`

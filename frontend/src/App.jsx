@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { solvePathfinding } from "./solverClient";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const API_PATH = "/api/pathfind";
@@ -239,58 +240,72 @@ function App() {
     setStats(null);
     setStatus("Computing route...");
     setGrid((prev) => clearVisualization(prev));
+    let lastFetchError = null;
 
     try {
-      const payload = JSON.stringify({
+      const requestPayload = {
         grid: toNumericGrid(grid),
         start,
         end,
         algorithm,
         allowDiagonal
-      });
+      };
 
-      let response;
-      let lastFetchError = null;
+      const payload = JSON.stringify(requestPayload);
+
+      let data;
+      let usedBrowserFallback = false;
 
       for (const apiUrl of getApiCandidates()) {
         try {
-          response = await fetch(apiUrl, {
+          const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
             },
             body: payload
           });
+
+          const raw = await response.text();
+          let parsed = null;
+
+          try {
+            parsed = raw ? JSON.parse(raw) : null;
+          } catch {
+            parsed = null;
+          }
+
+          if (!response.ok) {
+            throw new Error(parsed?.error || `Backend error (${response.status}).`);
+          }
+
+          if (!parsed) {
+            throw new Error("Backend returned an invalid response.");
+          }
+
+          data = parsed;
           break;
         } catch (fetchError) {
           lastFetchError = fetchError;
         }
       }
 
-      if (!response) {
-        throw lastFetchError || new TypeError("Failed to fetch");
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to solve pathfinding request.");
+      if (!data) {
+        data = solvePathfinding(requestPayload);
+        usedBrowserFallback = true;
       }
 
       await animateResult(data.visitedOrder || [], data.path || []);
       setStats(data.stats || null);
 
       if (data.found) {
-        setStatus(`Path found with ${data.path.length} nodes.`);
+        setStatus(`Path found with ${data.path.length} nodes.${usedBrowserFallback ? " (Browser mode)" : ""}`);
       } else {
-        setStatus("No path found. Try reducing walls or enabling diagonals.");
+        setStatus(`No path found. Try reducing walls or enabling diagonals.${usedBrowserFallback ? " (Browser mode)" : ""}`);
       }
     } catch (error) {
-      if (error instanceof TypeError) {
-        setStatus("Failed to reach backend. Run npm run dev from project root, or set VITE_API_URL.");
-      } else {
-        setStatus(error.message || "Unexpected error.");
-      }
+      const fallbackHint = lastFetchError ? " If you deployed only frontend, this is expected and browser fallback should handle it." : "";
+      setStatus((error?.message || "Unexpected error.") + fallbackHint);
     } finally {
       setIsRunning(false);
     }
