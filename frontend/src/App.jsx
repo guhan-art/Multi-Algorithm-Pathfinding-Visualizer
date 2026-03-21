@@ -304,8 +304,28 @@ function App() {
         setStatus(`No path found. Try reducing walls or enabling diagonals.${usedBrowserFallback ? " (Browser mode)" : ""}`);
       }
     } catch (error) {
-      const fallbackHint = lastFetchError ? " If you deployed only frontend, this is expected and browser fallback should handle it." : "";
-      setStatus((error?.message || "Unexpected error.") + fallbackHint);
+      // Defensive path: if any parse/syntax issue escapes network handling, still visualize in-browser.
+      try {
+        const fallbackData = solvePathfinding({
+          grid: toNumericGrid(grid),
+          start,
+          end,
+          algorithm,
+          allowDiagonal
+        });
+
+        await animateResult(fallbackData.visitedOrder || [], fallbackData.path || []);
+        setStats(fallbackData.stats || null);
+
+        if (fallbackData.found) {
+          setStatus(`Path found with ${fallbackData.path.length} nodes. (Browser mode)`);
+        } else {
+          setStatus("No path found. Try reducing walls or enabling diagonals. (Browser mode)");
+        }
+      } catch (fallbackError) {
+        const fallbackHint = lastFetchError ? " If you deployed only frontend, this is expected and browser fallback should handle it." : "";
+        setStatus((fallbackError?.message || error?.message || "Unexpected error.") + fallbackHint);
+      }
     } finally {
       setIsRunning(false);
     }
